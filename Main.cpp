@@ -238,7 +238,8 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
 
         int col = (xPos - windowShift) / cellSize;
         int row = (yPos - windowShift) / cellSize;
-        BoardGame[row][col].MinMark = true;
+        if (BoardGame[row][col].MinMark == false) { BoardGame[row][col].MinMark = true; }
+        else { BoardGame[row][col].MinMark = false; }
         InvalidateRect(hwnd, NULL, TRUE);
         break;
     }
@@ -283,7 +284,11 @@ int CountMineAreal(int row, int col) {
     int countMine = 0;
 
     for (int y = row - 1; y <= row + 1; y++) {
+        if (y == -1) { y = row; }//чтобы не выходило за пределы
+        if (y == 10) { continue; } //не проверяем
         for (int x = col - 1; x <= col + 1; x++) {
+            if (x == -1) { x = 0; }
+            if (x == 10) { continue; } //не проверяем
             if (y == row && x == col) { continue; }
             else {
                 if (BoardGame[y][x].Mine == true) {
@@ -347,7 +352,7 @@ bool IsValidCell(int row, int col) {
 }
 
 void RevealEmptyCells(int row, int col) {
-    if (!IsValidCell(row, col) || BoardGame[row][col].ClickOrNo) {
+    if (!IsValidCell(row, col) || BoardGame[row][col].ClickOrNo || BoardGame[row][col].Mine == true) {
         return;
     }
 
