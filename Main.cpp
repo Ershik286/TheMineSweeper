@@ -279,19 +279,20 @@ HBITMAP LoadBitmapFromFile(const WCHAR* filename) {
     delete bitmap;
     return hBitmap;
 }
+// Function to check if a cell is within bounds
+bool IsValidCell(int row, int col) {
+    return (row >= 0 && row < ROWS && col >= 0 && col < COLOMN);
+}
 
 int CountMineAreal(int row, int col) {
     int countMine = 0;
 
     for (int y = row - 1; y <= row + 1; y++) {
-        if (y == -1) { y = row; }//чтобы не выходило за пределы
-        if (y == 10) { continue; } //не проверяем
         for (int x = col - 1; x <= col + 1; x++) {
-            if (x == -1) { x = 0; }
-            if (x == 10) { continue; } //не проверяем
+            if (!IsValidCell(y, x)) continue; // Skip out-of-bounds cells
             if (y == row && x == col) { continue; }
             else {
-                if (BoardGame[y][x].Mine == true) {
+                if (BoardGame[y][x].Mine) {
                     countMine++;
                 }
             }
@@ -301,14 +302,16 @@ int CountMineAreal(int row, int col) {
     return countMine;
 }
 
+// GameOver: Set the flag to ensure there are no errors
 void GameOver() {
+    countPlayPlot = 0;
+    FlagComplBoard = false;
     for (int y = 0; y < ROWS; y++) {
         for (int x = 0; x < COLOMN; x++) {
             BoardGame[y][x].ClickOrNo = true;
         }
     }
 }
-
 int CheckWin() {
     if (countPlayPlot == countEmptyPlit) {
         return 1;
@@ -324,12 +327,24 @@ void ComplectationBoard() {
     uniform_int_distribution<> rowDist(0, ROWS - 1); // Distribution for row indices
     uniform_int_distribution<> colDist(0, COLOMN - 1); // Distribution for col indices
 
+    //Reset the board
+    countPlayPlot = 0;
+    FlagComplBoard = false;
+    for (int y = 0; y < ROWS; y++) {
+        for (int x = 0; x < COLOMN; x++) {
+            BoardGame[y][x].Mine = false;
+            BoardGame[y][x].MinMark = false;
+            BoardGame[y][x].ClickOrNo = false;
+            BoardGame[y][x].CountMine = 0;
+        }
+    }
+
     int minesPlaced = 0;
     while (minesPlaced < NumMine) {
         int row = rowDist(gen);
         int col = colDist(gen);
 
-        if (BoardGame[row][col].Mine == false) {
+        if (!BoardGame[row][col].Mine) {
             BoardGame[row][col].Mine = true;
             minesPlaced++;
         }
@@ -337,27 +352,21 @@ void ComplectationBoard() {
 
     for (int y = 0; y < ROWS; y++) {
         for (int x = 0; x < COLOMN; x++) {
-            if (BoardGame[y][y].Mine == true) { continue; }
-            else {
-                BoardGame[y][x].CountMine = CountMineAreal(y, x);
-            }
+            BoardGame[y][x].CountMine = CountMineAreal(y, x);
         }
     }
 
     FlagComplBoard = true;
 }
 
-bool IsValidCell(int row, int col) {
-    return (row >= 0 && row < ROWS && col >= 0 && col < COLOMN);
-}
-
 void RevealEmptyCells(int row, int col) {
-    if (!IsValidCell(row, col) || BoardGame[row][col].ClickOrNo || BoardGame[row][col].Mine == true) {
+    if (!IsValidCell(row, col) || BoardGame[row][col].ClickOrNo || BoardGame[row][col].Mine) {
         return;
     }
 
     BoardGame[row][col].ClickOrNo = true; // Mark current cell as revealed
 
+    countPlayPlot++;
     if (BoardGame[row][col].CountMine == 0) {
         // Recursively check adjacent cells
         for (int i = -1; i <= 1; ++i) {
